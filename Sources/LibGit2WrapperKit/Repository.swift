@@ -1347,6 +1347,48 @@ public final class Repository { // swiftlint:disable:this type_body_length
         setHEAD(reference).flatMap { self.checkout(strategy: strategy, progress: progress) }
     }
 
+    /// How far a reset moves back, mirroring `git reset --soft|--mixed|--hard`.
+    public enum ResetType {
+        /// Move the branch only; keep the index and working tree.
+        case soft
+        /// Move the branch and reset the index; keep the working tree.
+        case mixed
+        /// Move the branch and reset the index and working tree, discarding every local change.
+        case hard
+
+        fileprivate var gitValue: git_reset_t {
+            switch self {
+            case .soft: GIT_RESET_SOFT
+            case .mixed: GIT_RESET_MIXED
+            case .hard: GIT_RESET_HARD
+            }
+        }
+    }
+
+    /// Move the current branch to `commit`, for example to discard local commits that were never pushed.
+    /// - Parameters:
+    ///   - commit: The commit the current branch should point to.
+    ///   - type: How much state to reset. Defaults to ``ResetType/hard``.
+    /// - Returns: Return a `Result<Void, NSError>`
+    public func reset(to commit: Commit, type: ResetType = .hard) -> Result<Void, NSError> {
+        var object: OpaquePointer?
+        var oid = commit.oid.oid
+        let lookupResult = git_object_lookup(&object, pointer, &oid, GIT_OBJECT_COMMIT)
+        guard lookupResult == GIT_OK.rawValue else {
+            return .failure(NSError(gitError: lookupResult, pointOfFailure: "git_object_lookup"))
+        }
+
+        defer { git_object_free(object) }
+
+        var options = checkoutOptions(strategy: .Force)
+        let result = git_reset(pointer, object, type.gitValue, &options)
+        guard result == GIT_OK.rawValue else {
+            return .failure(NSError(gitError: result, pointOfFailure: "git_reset"))
+        }
+
+        return .success(())
+    }
+
     /// checkout to the given branch
     /// - Parameter branch: The branch
     /// - Returns: Returns a result with void or the error that occurred.
