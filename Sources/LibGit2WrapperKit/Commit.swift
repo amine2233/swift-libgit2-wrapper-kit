@@ -26,7 +26,7 @@ public struct Commit: ObjectType, Hashable {
     /// Create an instance with a libgit2 `git_commit` object.
     public init(_ pointer: OpaquePointer) {
         self.oid = OID(git_object_id(pointer).pointee)
-        self.message = String(validatingUTF8: git_commit_message(pointer))!
+        self.message = String(validatingCString: git_commit_message(pointer))!
         self.author = Signature(git_commit_author(pointer).pointee)
         self.committer = Signature(git_commit_committer(pointer).pointee)
         self.tree = PointerTo(OID(git_commit_tree_id(pointer).pointee))

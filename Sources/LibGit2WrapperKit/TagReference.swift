@@ -54,7 +54,7 @@ public enum TagReference: ReferenceType, Hashable {
             return nil
         }
 
-        let name = String(validatingUTF8: git_reference_name(pointer))!
+        let name = String(validatingCString: git_reference_name(pointer))!
         let repo = git_reference_owner(pointer)
         var oid = git_reference_target(pointer).pointee
 
@@ -93,8 +93,8 @@ public struct Tag: ObjectType, Hashable {
         self.oid = OID(git_object_id(pointer).pointee)
         let targetOID = OID(git_tag_target_id(pointer).pointee)
         self.target = Pointer(oid: targetOID, type: git_tag_target_type(pointer))!
-        self.name = String(validatingUTF8: git_tag_name(pointer))!
+        self.name = String(validatingCString: git_tag_name(pointer))!
         self.tagger = Signature(git_tag_tagger(pointer).pointee)
-        self.message = String(validatingUTF8: git_tag_message(pointer))!
+        self.message = String(validatingCString: git_tag_message(pointer))!
     }
 }

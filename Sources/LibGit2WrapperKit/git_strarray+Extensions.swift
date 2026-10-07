@@ -8,7 +8,7 @@ extension git_strarray {
 
     func map<T>(_ transform: (String) -> T) -> [T] {
         (0 ..< count).map {
-            let string = String(validatingUTF8: self.strings[$0]!)!
+            let string = String(validatingCString: self.strings[$0]!)!
             return transform(string)
         }
     }

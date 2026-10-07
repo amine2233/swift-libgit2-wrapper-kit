@@ -66,9 +66,9 @@ public enum Git {
 func errorMessage(_ errorCode: Int32) -> String? {
     let last = git_error_last()
     if let lastErrorPointer = last {
-        return String(validatingUTF8: lastErrorPointer.pointee.message)
+        return String(validatingCString: lastErrorPointer.pointee.message)
     } else if Int32(errorCode) == GIT_ERROR_OS.rawValue {
-        return String(validatingUTF8: strerror(errno))
+        return String(validatingCString: strerror(errno))
     } else {
         return nil
     }
@@ -150,7 +150,7 @@ private func checkoutProgressCallback(
             block = buffer.move()
             buffer.deallocate()
         }
-        block(path.flatMap(String.init(validatingUTF8:)), completedSteps, totalSteps)
+        block(path.flatMap(String.init(validatingCString:)), completedSteps, totalSteps)
     }
 }
 
@@ -340,7 +340,7 @@ public final class Repository { // swiftlint:disable:this type_body_length
         self.pointer = pointer
 
         let path = git_repository_workdir(pointer)
-        self.directoryURL = path.map { URL(fileURLWithPath: String(validatingUTF8: $0)!, isDirectory: true) }
+        self.directoryURL = path.map { URL(fileURLWithPath: String(validatingCString: $0)!, isDirectory: true) }
     }
 
     static func fromPointer(_ pointer: UnsafeMutableRawPointer) -> Repository {
@@ -690,9 +690,12 @@ public final class Repository { // swiftlint:disable:this type_body_length
                     return Result.failure(NSError(domain: "SwiftGit2", code: -1, userInfo: nil))
                 }
 
-                let ptrRefspec = UnsafeMutablePointer<Int8>(mutating: (refspec as NSString).utf8String)
+                let ptrRefspec = strdup(refspec)
+                defer { free(ptrRefspec) }
                 var selectedRefspecs = [ptrRefspec]
-                var selectedRefspecArray = git_strarray(strings: &selectedRefspecs, count: 1)
+                var selectedRefspecArray = selectedRefspecs.withUnsafeMutableBufferPointer { buffer in
+                    git_strarray(strings: buffer.baseAddress, count: 1)
+                }
                 // do the push
                 let uploadResult = git_remote_upload(remote, &selectedRefspecArray, &options)
                 guard uploadResult == GIT_OK.rawValue else {
@@ -769,12 +772,12 @@ public final class Repository { // swiftlint:disable:this type_body_length
                     git_push_options_init(&options, UInt32(GIT_PUSH_OPTIONS_VERSION))
                 }
                 // lookup refspec
-                let ptrRefspec = UnsafeMutablePointer<Int8>(
-                    mutating: (branch.longName as NSString)
-                        .utf8String
-                )
-                var selectedRefspecs = ptrRefspec
-                var selectedRefspecArray = git_strarray(strings: &selectedRefspecs, count: 1)
+                let ptrRefspec = strdup(branch.longName)
+                defer { free(ptrRefspec) }
+                var selectedRefspecs = [ptrRefspec]
+                var selectedRefspecArray = selectedRefspecs.withUnsafeMutableBufferPointer { buffer in
+                    git_strarray(strings: buffer.baseAddress, count: 1)
+                }
                 // do the push
                 let uploadResult = git_remote_push(remote, &selectedRefspecArray, &options)
                 guard uploadResult == GIT_OK.rawValue else {
