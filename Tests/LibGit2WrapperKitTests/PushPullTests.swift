@@ -146,4 +146,51 @@ struct PushPullTests {
         #expect(try fixture.work.HEAD().get().longName == "HEAD")
         #expect(try fixture.work.HEAD().get().oid == remoteBranch.oid)
     }
+
+    @Test
+    func hardResetDiscardsUnpushedCommitAndItsFile() throws {
+        let fixture = try makeFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        let pushedTip = try fixture.work.commit(fixture.work.HEAD().get().oid).get()
+        _ = try commitFile("unpushed.txt", in: fixture.work, directory: fixture.workURL)
+        let branch = try #require(try fixture.work.localBranches().get().first)
+        let upstream = try branch.getTrackingBranch(repo: fixture.work).get()
+        let ahead = try fixture.work.graphAheadBehind(
+            localCommit: fixture.work.commit(branch.oid).get(),
+            upstreamCommit: fixture.work.commit(upstream.oid).get()
+        ).get()
+        #expect(ahead.0 == 1)
+
+        try fixture.work.reset(to: pushedTip).get()
+
+        #expect(try fixture.work.HEAD().get().oid == pushedTip.oid)
+        #expect(!FileManager.default
+            .fileExists(atPath: fixture.workURL.appendingPathComponent("unpushed.txt").path))
+    }
+
+    @Test
+    func softResetKeepsChangesStaged() throws {
+        let fixture = try makeFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        let pushedTip = try fixture.work.commit(fixture.work.HEAD().get().oid).get()
+        _ = try commitFile("unpushed.txt", in: fixture.work, directory: fixture.workURL)
+
+        try fixture.work.reset(to: pushedTip, type: .soft).get()
+
+        #expect(try fixture.work.HEAD().get().oid == pushedTip.oid)
+        #expect(try fixture.work.status().get().contains { $0.status.contains(.indexNew) })
+    }
+
+    @Test
+    func forceCheckoutDiscardsUncommittedChanges() throws {
+        let fixture = try makeFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        let file = fixture.workURL.appendingPathComponent("seed.txt")
+        try "changed".write(to: file, atomically: true, encoding: .utf8)
+
+        try fixture.work.checkout(strategy: .Force).get()
+
+        #expect(try String(contentsOf: file, encoding: .utf8) == "seed.txt")
+        #expect(try fixture.work.status().get().isEmpty)
+    }
 }
