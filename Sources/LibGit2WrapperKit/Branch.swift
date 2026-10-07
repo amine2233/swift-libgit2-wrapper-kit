@@ -49,9 +49,9 @@ public struct Branch: ReferenceType, Hashable {
             return nil
         }
 
-        self.name = String(validatingUTF8: namePointer!)!
+        self.name = String(validatingCString: namePointer!)!
 
-        self.longName = String(validatingUTF8: git_reference_name(pointer))!
+        self.longName = String(validatingCString: git_reference_name(pointer))!
 
         var oid: OID
         if git_reference_type(pointer).rawValue == GIT_REFERENCE_SYMBOLIC.rawValue {

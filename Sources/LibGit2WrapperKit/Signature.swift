@@ -30,8 +30,8 @@ public struct Signature {
 
     /// Create an instance with a libgit2 `git_signature`.
     public init(_ signature: git_signature) {
-        self.name = String(validatingUTF8: signature.name)!
-        self.email = String(validatingUTF8: signature.email)!
+        self.name = String(validatingCString: signature.name)!
+        self.email = String(validatingCString: signature.email)!
         self.time = Date(timeIntervalSince1970: TimeInterval(signature.when.time))
         self.timeZone = TimeZone(secondsFromGMT: 60 * Int(signature.when.offset))!
     }

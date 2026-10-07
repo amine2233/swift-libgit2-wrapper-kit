@@ -84,8 +84,8 @@ public struct Reference: ReferenceType, Hashable {
 
     /// Create an instance with a libgit2 `git_reference` object.
     public init(_ pointer: OpaquePointer) {
-        let shorthand = String(validatingUTF8: git_reference_shorthand(pointer))!
-        self.longName = String(validatingUTF8: git_reference_name(pointer))!
+        let shorthand = String(validatingCString: git_reference_shorthand(pointer))!
+        self.longName = String(validatingCString: git_reference_name(pointer))!
         self.shortName = (shorthand == longName ? nil : shorthand)
         self.oid = OID(git_reference_target(pointer).pointee)
     }

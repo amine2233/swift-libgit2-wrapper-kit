@@ -15,7 +15,7 @@ let package = Package(
         )
     ],
     dependencies: [
-        .package(url: "https://github.com/amine2233/libgit2-spm.git", exact: "1.2.2")
+        .package(url: "https://github.com/amine2233/spm-libgit2", from: "1.9.7")
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -32,7 +32,7 @@ let package = Package(
             name: "LibGit2WrapperKit",
             dependencies: [
                 .target(name: "Libgit2Module"),
-                .product(name: "libgit2", package: "libgit2-spm")
+                .product(name: "libgit2", package: "spm-libgit2")
             ]
         ),
         .testTarget(
