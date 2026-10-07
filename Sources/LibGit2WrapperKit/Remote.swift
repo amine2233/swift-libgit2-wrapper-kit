@@ -2,7 +2,7 @@ import Foundation
 import Libgit2Module
 
 /// A remote in a git repository.
-public struct Remote: Hashable {
+public struct Remote: Hashable, Sendable {
     /// The name of the remote.
     public let name: String
 
