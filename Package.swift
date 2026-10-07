@@ -12,11 +12,26 @@ let package = Package(
             targets: ["LibGit2WrapperKit"]
         ),
     ],
+    dependencies: [
+        .package(url: "https://github.com/amine2233/libgit2-spm.git", exact: "1.2.2")
+    ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
         // Targets can depend on other targets in this package and products from dependencies.
         .target(
+            name: "Libgit2Module",
+            publicHeadersPath: "Headers",
+            linkerSettings: [
+                .linkedLibrary("z"),
+                .linkedLibrary("iconv")
+            ]
+        ),
+        .target(
             name: "LibGit2WrapperKit",
+            dependencies: [
+                .target(name: "Libgit2Module"),
+                .product(name: "libgit2", package: "libgit2-spm")
+            ],
             swiftSettings: [
                 .enableUpcomingFeature("ApproachableConcurrency"),
             ],

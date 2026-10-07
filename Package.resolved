@@ -1,0 +1,15 @@
+{
+  "originHash" : "c6d44c325d51559a175018d75751bbcb8f2ae719afbc5f33b93cc1847d2b1933",
+  "pins" : [
+    {
+      "identity" : "libgit2-spm",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/amine2233/libgit2-spm.git",
+      "state" : {
+        "revision" : "2e9140b8b104f0e855f3abb110d882bea2f52207",
+        "version" : "1.2.2"
+      }
+    }
+  ],
+  "version" : 3
+}
