@@ -14,7 +14,7 @@ jobs:
   docs:
     uses: amine2233/ci-shared/.github/workflows/pages.yml@1.1
     with:
-      main-library-name: StateMachine
+      main-library-name: LibGit2WrapperKit
       hosting-base-path: ${{ github.event.repository.name }}
       platform: macOS
       macos-runner: macos-latest
