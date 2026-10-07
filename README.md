@@ -10,7 +10,7 @@ Add the package to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/amine2233/swift-libgit2-wrapper-kit.git", branch: "main")
+    .package(url: "https://github.com/amine2233/swift-libgit2-wrapper-kit.git", from: "1.0.0")
 ]
 ```
 

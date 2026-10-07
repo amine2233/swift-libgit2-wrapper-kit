@@ -166,3 +166,17 @@ Pick the reset type to control what is kept:
 | `.soft` | dropped | kept | kept |
 
 > Warning: a hard reset cannot be undone for changes that were never committed or pushed. Use `.soft` to keep the work and recommit it differently.
+
+## Use async/await
+
+`clone`, `fetch`, `push` and `pull` have `async throws` overloads that run the blocking libgit2 call off the caller's executor, so you can `await` them from the main actor without freezing the UI:
+
+```swift
+let repository = try await Repository.clone(from: remoteURL, to: destinationURL, credentials: credentials, proxy: nil)
+let origin = try repository.remote(named: "origin").get()
+
+try await repository.fetch(origin, credentials: credentials, proxy: nil)
+try await repository.push(remote: origin, branch: branch, credentials: credentials)
+```
+
+> Important: do not run two operations on the same ``Repository`` at once. libgit2 repository handles are not safe for concurrent use.

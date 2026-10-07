@@ -10,7 +10,7 @@ final class Wrapper<T> {
 }
 
 /// The `Credentials`
-public enum Credentials: CustomStringConvertible {
+public enum Credentials: CustomStringConvertible, Sendable {
     case `default`
     case sshAgent
     case plaintext(username: String, password: String)
@@ -37,7 +37,7 @@ public enum Credentials: CustomStringConvertible {
 }
 
 /// Git Proxy Configuration
-public struct ProxyConfiguration {
+public struct ProxyConfiguration: Sendable {
     /// The proxy url
     public let url: URL?
     /// The credential url
@@ -54,7 +54,7 @@ public struct ProxyConfiguration {
 }
 
 /// The proxy Credential
-public struct ProxyCredential {
+public struct ProxyCredential: Sendable {
     /// The proxy username
     public let username: String?
     /// The proxy password
