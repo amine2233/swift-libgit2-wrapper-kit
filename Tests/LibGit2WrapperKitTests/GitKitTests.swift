@@ -1,5 +1,5 @@
 import Testing
-@testable import GitKit
+@testable import LibGit2WrapperKit
 
 @Test
 func example() {
