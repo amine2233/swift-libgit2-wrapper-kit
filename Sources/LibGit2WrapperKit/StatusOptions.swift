@@ -58,11 +58,16 @@ public struct StatusOptions: OptionSet, Sendable {
     )
 }
 
+/// The status of a single path in the repository.
 public struct StatusEntry {
+    /// The combined status flags of the path.
     public var status: Diff.Status
+    /// The changes between HEAD and the index.
     public var headToIndex: Diff.Delta?
+    /// The changes between the index and the working directory.
     public var indexToWorkDir: Diff.Delta?
 
+    /// Create an instance with a libgit2 `git_status_entry`.
     public init(from statusEntry: git_status_entry) {
         self.status = Diff.Status(rawValue: statusEntry.status.rawValue)
 
