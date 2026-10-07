@@ -243,6 +243,9 @@ private func cloneOptions(
     return options
 }
 
+/// libgit2 requires a global initialization before most operations; Swift runs this once, lazily.
+private let libgit2Initialization = git_libgit2_init()
+
 /// A git repository.
 /// Git `Repository` class
 public final class Repository { // swiftlint:disable:this type_body_length
@@ -273,7 +276,6 @@ public final class Repository { // swiftlint:disable:this type_body_length
     ///
     /// Returns a `Result` with a `Repository` or an error.
     public static func at(_ url: URL) -> Result<Repository, NSError> {
-        git_libgit2_init()
         var pointer: OpaquePointer?
         let result = url.withUnsafeFileSystemRepresentation {
             git_repository_open(&pointer, $0)
@@ -309,6 +311,7 @@ public final class Repository { // swiftlint:disable:this type_body_length
         proxy: ProxyConfiguration?,
         checkoutProgress: CheckoutProgressBlock? = nil
     ) -> Result<Repository, NSError> {
+        _ = libgit2Initialization
         var options = cloneOptions(
             bare: bare,
             localClone: localClone,
@@ -337,6 +340,7 @@ public final class Repository { // swiftlint:disable:this type_body_length
     ///
     /// The Repository assumes ownership of the `git_repository` object.
     public init(_ pointer: OpaquePointer) {
+        git_libgit2_init()
         self.pointer = pointer
 
         let path = git_repository_workdir(pointer)
@@ -674,7 +678,6 @@ public final class Repository { // swiftlint:disable:this type_body_length
                     git_push_options_init(&options, UInt32(GIT_PUSH_OPTIONS_VERSION))
                 }
                 // lookup refspec
-                // this part of code doeasn't work, need to use this instead of using the current refspec
                 var refspecArray = git_strarray()
                 let getRefspecsResult = git_remote_get_push_refspecs(&refspecArray, remote)
                 guard getRefspecsResult == GIT_OK.rawValue else {
@@ -686,10 +689,8 @@ public final class Repository { // swiftlint:disable:this type_body_length
                 }
 
                 defer { git_strarray_dispose(&refspecArray) }
-                guard let refspec = (refspecArray.filter { $0 == "\(branch.longName):\(branch.longName)" })
-                    .first else {
-                    return Result.failure(NSError(domain: "SwiftGit2", code: -1, userInfo: nil))
-                }
+                let branchRefspec = "\(branch.longName):\(branch.longName)"
+                let refspec = refspecArray.filter { $0 == branchRefspec }.first ?? branchRefspec
 
                 let ptrRefspec = strdup(refspec)
                 defer { free(ptrRefspec) }
@@ -1432,6 +1433,20 @@ public final class Repository { // swiftlint:disable:this type_body_length
         }
     }
 
+    /// The current tip as the single parent of a new commit, or no parent when HEAD is unborn.
+    private func headParents() -> Result<[Commit], NSError> {
+        var parentID = git_oid()
+        let result = git_reference_name_to_id(&parentID, pointer, "HEAD")
+        if result == GIT_ENOTFOUND.rawValue {
+            return .success([])
+        }
+        guard result == GIT_OK.rawValue else {
+            return .failure(NSError(gitError: result, pointOfFailure: "git_reference_name_to_id"))
+        }
+
+        return commit(OID(parentID)).map { [$0] }
+    }
+
     /// Performs a commit of the staged files with the specified message and author
     public func commit(message: String, author: String, email: String) -> Result<Commit, NSError> {
         unsafeIndex().flatMap { index in
@@ -1443,13 +1458,11 @@ public final class Repository { // swiftlint:disable:this type_body_length
                 return .failure(err)
             }
 
-            var parentId = git_oid()
-            git_reference_name_to_id(&parentId, self.pointer, "HEAD")
-            return commit(OID(parentId)).flatMap { commitPointer in
+            return headParents().flatMap { parents in
                 commit(
                     index: index,
                     tree: treeOid,
-                    parents: [commitPointer],
+                    parents: parents,
                     message: message,
                     author: author,
                     email: email
@@ -1601,14 +1614,8 @@ public final class Repository { // swiftlint:disable:this type_body_length
                 return .failure(err)
             }
 
-            var parentID = git_oid()
-            let nameToIDResult = git_reference_name_to_id(&parentID, self.pointer, "HEAD")
-            guard nameToIDResult == GIT_OK.rawValue else {
-                return .failure(NSError(gitError: nameToIDResult, pointOfFailure: "git_reference_name_to_id"))
-            }
-
-            return commit(OID(parentID)).flatMap { parentCommit in
-                commit(tree: OID(treeOID), parents: [parentCommit], message: message, signature: signature)
+            return headParents().flatMap { parents in
+                commit(tree: OID(treeOID), parents: parents, message: message, signature: signature)
             }
         }
     }

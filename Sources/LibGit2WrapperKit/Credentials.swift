@@ -119,7 +119,7 @@ extension Credentials: Equatable {
 /// creds,
 /// -1 = error)
 func credentialsCallback(
-    credential: UnsafeMutablePointer<OpaquePointer?>?,
+    credential: UnsafeMutablePointer<UnsafeMutablePointer<git_credential>?>?,
     url _: UnsafePointer<CChar>?,
     urlUsername: UnsafePointer<CChar>?,
     _: UInt32,
@@ -154,7 +154,7 @@ func credentialsCallback(
 }
 
 func credentialsProxyCallback(
-    credential: UnsafeMutablePointer<OpaquePointer?>?,
+    credential: UnsafeMutablePointer<UnsafeMutablePointer<git_credential>?>?,
     url _: UnsafePointer<CChar>?,
     urlUsername: UnsafePointer<CChar>?,
     _: UInt32,
