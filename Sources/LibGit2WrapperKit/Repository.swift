@@ -340,7 +340,8 @@ public final class Repository { // swiftlint:disable:this type_body_length
         self.pointer = pointer
 
         let path = git_repository_workdir(pointer)
-        self.directoryURL = path.map { URL(fileURLWithPath: String(validatingCString: $0)!, isDirectory: true) }
+        self.directoryURL = path
+            .map { URL(fileURLWithPath: String(validatingCString: $0)!, isDirectory: true) }
     }
 
     static func fromPointer(_ pointer: UnsafeMutableRawPointer) -> Repository {
