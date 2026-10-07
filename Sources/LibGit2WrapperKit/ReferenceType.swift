@@ -18,6 +18,7 @@ public protocol ReferenceType {
 }
 
 extension ReferenceType {
+    /// Updates the reference to point to `newTarget` and returns the updated reference.
     public func referenceByUpdatingTarget(
         repo: Repository,
         newTarget: OID,
@@ -49,11 +50,13 @@ extension ReferenceType {
 }
 
 extension ReferenceType {
+    /// Two references are equal when they share the same long name and OID.
     public static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.longName == rhs.longName
             && lhs.oid == rhs.oid
     }
 
+    /// Hashes the reference by its long name.
     public func hash(into hasher: inout Hasher) {
         hasher.combine(longName)
         hasher.combine(oid)

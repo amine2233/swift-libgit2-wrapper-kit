@@ -1,6 +1,7 @@
 import Foundation
 import Libgit2Module
 
+/// Called during checkout with the current path, the completed step count and the total step count.
 public typealias CheckoutProgressBlock = (String?, Int, Int) -> Void
 
 /// The flags defining how a checkout should be performed.

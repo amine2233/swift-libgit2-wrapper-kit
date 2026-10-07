@@ -1,18 +1,26 @@
 import Foundation
 import Libgit2Module
 
+/// A set of file differences between two git trees or states.
 public struct Diff {
     /// The set of deltas.
     public var deltas = [Delta]()
 
+    /// A single file change within a diff.
     public struct Delta {
+        /// The libgit2 object type of a delta.
         public static let type = GIT_OBJECT_REF_DELTA
 
+        /// The kind of change applied to the file.
         public var status: Status
+        /// The delta flags.
         public var flags: Flags
+        /// The file before the change.
         public var oldFile: File?
+        /// The file after the change.
         public var newFile: File?
 
+        /// Create an instance with a libgit2 `git_diff_delta`.
         public init(_ delta: git_diff_delta) {
             self.status = Status(rawValue: UInt32(git_diff_status_char(delta.status)))
             self.flags = Flags(rawValue: delta.flags)
@@ -21,12 +29,18 @@ public struct Diff {
         }
     }
 
+    /// One side of a delta: a file as it exists on either side of the diff.
     public struct File {
+        /// The OID of the file content.
         public var oid: OID
+        /// The path of the file relative to the repository root.
         public var path: String
+        /// The size of the file in bytes.
         public var size: UInt64
+        /// The file flags.
         public var flags: Flags
 
+        /// Create an instance with a libgit2 `git_diff_file`.
         public init(_ diffFile: git_diff_file) {
             self.oid = OID(diffFile.id)
             let path = diffFile.path

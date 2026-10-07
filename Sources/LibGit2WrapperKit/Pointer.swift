@@ -11,11 +11,13 @@ public protocol PointerType: Hashable {
 }
 
 extension PointerType {
+    /// Two pointers are equal when they share the same OID and object type.
     public static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.oid == rhs.oid
             && lhs.type == rhs.type
     }
 
+    /// Hashes the pointer by its OID.
     public func hash(into hasher: inout Hasher) {
         hasher.combine(oid)
     }

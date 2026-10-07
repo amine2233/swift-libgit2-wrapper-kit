@@ -795,8 +795,11 @@ public final class Repository { // swiftlint:disable:this type_body_length
 
     /// The Git conflict decision
     public enum ConflictResolutionDecision {
+        /// Keep our version of the conflicted file.
         case ours
+        /// Keep their version of the conflicted file.
         case theirs
+        /// Use the provided data as the resolved content.
         case merge(Data)
     }
 
@@ -1463,6 +1466,7 @@ public final class Repository { // swiftlint:disable:this type_body_length
         CommitIterator(repo: self, root: branch.oid.oid)
     }
 
+    /// Returns the number of commits reachable from the given branch.
     public func numberOfCommits(in branch: Branch) -> Int {
         var count = 0
         let commits = commits(in: branch)
@@ -1889,6 +1893,7 @@ public final class Repository { // swiftlint:disable:this type_body_length
         }
     }
 
+    /// Returns the number of commits `localCommit` is ahead of and behind `upstreamCommit`, in that order.
     public func graphAheadBehind(localCommit: Commit, upstreamCommit: Commit) -> Result<(Int, Int), NSError> {
         let aheadPointer = UnsafeMutablePointer<Int>.allocate(capacity: 1)
         let behindPointer = UnsafeMutablePointer<Int>.allocate(capacity: 1)

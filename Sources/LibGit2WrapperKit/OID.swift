@@ -33,6 +33,7 @@ public struct OID {
 
     // MARK: - Properties
 
+    /// The underlying libgit2 object identifier.
     public let oid: git_oid
 }
 
