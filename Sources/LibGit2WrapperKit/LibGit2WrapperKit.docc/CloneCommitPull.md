@@ -180,3 +180,102 @@ try await repository.push(remote: origin, branch: branch, credentials: credentia
 ```
 
 > Important: do not run two operations on the same ``Repository`` at once. libgit2 repository handles are not safe for concurrent use.
+
+## Show clone progress
+
+The `checkoutProgress` closure of `clone` reports the checkout phase as `(path, completedSteps, totalSteps)`. Use it to drive a SwiftUI progress bar:
+
+```swift
+import LibGit2WrapperKit
+import SwiftUI
+
+@MainActor @Observable
+final class CloneViewModel {
+    var fractionCompleted = 0.0
+    var isCloning = false
+    var errorMessage: String?
+
+    func clone(from remoteURL: URL, to destinationURL: URL) async {
+        isCloning = true
+        defer { isCloning = false }
+
+        do {
+            _ = try await Repository.clone(from: remoteURL, to: destinationURL, proxy: nil) { [weak self] _, completed, total in
+                guard total > 0 else { return }
+                let fraction = Double(completed) / Double(total)
+                Task { @MainActor in self?.fractionCompleted = fraction }
+            }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+}
+
+struct CloneView: View {
+    @State private var model = CloneViewModel()
+    let remoteURL: URL
+    let destinationURL: URL
+
+    var body: some View {
+        VStack {
+            if model.isCloning {
+                ProgressView(value: model.fractionCompleted)
+            } else {
+                Button("Clone") {
+                    Task { await model.clone(from: remoteURL, to: destinationURL) }
+                }
+            }
+            if let message = model.errorMessage {
+                Text(message).foregroundStyle(.red)
+            }
+        }
+    }
+}
+```
+
+> Important: this bar only covers the checkout phase, which starts after the objects are downloaded. During the download of a large repository it stays at zero, and cloning from a local path has no download phase at all. Download progress is not exposed by the library yet.
+
+## Get the full history
+
+``Repository/commits(in:)`` walks one branch from newest to oldest. To list every commit of the repository, walk all local and remote branches and keep each commit once:
+
+```swift
+struct HistoryEntry {
+    let id: OID
+    let summary: String
+    let author: String
+    let date: Date
+    let changedFiles: [String]
+}
+
+func fullHistory(of repository: Repository) throws -> [HistoryEntry] {
+    let branches = try repository.localBranches().get() + repository.remoteBranches().get()
+
+    var seen = Set<OID>()
+    var entries: [HistoryEntry] = []
+    for branch in branches {
+        for result in repository.commits(in: branch) {
+            let commit = try result.get()
+            guard seen.insert(commit.oid).inserted else { continue }
+
+            let diff = try repository.diff(for: commit).get()
+            entries.append(
+                HistoryEntry(
+                    id: commit.oid,
+                    summary: commit.message.split(separator: "\n").first.map(String.init) ?? "",
+                    author: commit.author.name,
+                    date: commit.author.time,
+                    changedFiles: diff.deltas.compactMap { $0.newFile?.path }
+                )
+            )
+        }
+    }
+    return entries.sorted { $0.date > $1.date }
+}
+```
+
+Each commit exposes its ``Commit/author``, ``Commit/committer``, ``Commit/message``, ``Commit/parents`` and ``Commit/tree``. ``Repository/diff(for:)`` lists the files that commit changed.
+
+> Tip: a cloned repository only has the branches the remote advertises. Run `fetch` first if you want history that was pushed after the clone.
+
+> Note: computing a diff per commit is the expensive part on a large repository. Drop the `diff(for:)` call if you only need messages and authors, or compute it lazily when the user opens a commit.
